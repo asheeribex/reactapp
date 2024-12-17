@@ -9,12 +9,13 @@ pipeline {
             }
         }
 
+        stages {
         stage('Dependency Check') {
             steps {
-                echo 'Running OWASP Dependency-Check...'
-                dependencyCheck additionalArguments: '--failOnCVSS 7 --out dependency-check-reports'
+                dependencyCheck additionalArguments: '--failOnCVSS 7 --out dependency-check-reports', odcInstallation: 'Dependency-Check-CLI'
             }
         }
+    }
 
         stage('Archive Reports') {
             steps {
