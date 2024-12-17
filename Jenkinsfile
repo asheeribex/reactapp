@@ -1,29 +1,26 @@
-node('built-in') {  // Ensure to run on the built-in node
-    try {
-        stage('SCM Checkout') {
-            // Checkout code from your GitHub repository
-            git credentialsId: 'github-credentials', url: 'https://github.com/asheeribex/reactapp.git'
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building the application...'
+                sh 'mvn clean install' // Example build step for a Maven project
+            }
         }
 
-        stage('Building Image') {
-            // Build the Docker image
-            sh 'docker build -t test .'
+        stage('Dependency Check') {
+            steps {
+                echo 'Running OWASP Dependency-Check...'
+                dependencyCheck additionalArguments: '--failOnCVSS 7 --out dependency-check-reports'
+            }
         }
 
-        stage('OWASP Dependency Check') {
-            // Run OWASP Dependency-Check plugin (you should have it installed and configured)
-            step([$class: 'DependencyCheckBuilder', 
-                  applicationName: 'reactapp', 
-                  odcInstallation: 'OWASP Dependency-Check'])
+        stage('Archive Reports') {
+            steps {
+                archiveArtifacts artifacts: 'dependency-check-reports/*'
+            }
         }
-
-    } catch (Exception e) {
-        currentBuild.result = 'FAILURE'
-        throw e
-    } finally {
-        // Clean up or perform any final steps here
-        echo 'Pipeline finished.'
     }
 }
-
 
