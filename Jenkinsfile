@@ -5,38 +5,41 @@ pipeline {
         stage('Dependency-Check-CLI') {
             steps {
                 script {
-                    try {
-                        // Run OWASP Dependency-Check
-                        dependencyCheck additionalArguments: '''
-                            -o './'
-                            -s './'
-                            -f 'ALL'
-                            --prettyPrint
-                        ''', odcInstallation: 'Dependency-Check-CLI'
+                    // Run OWASP Dependency-Check with the necessary arguments
+                    dependencyCheck additionalArguments: '''
+                        -o './dependency-check-reports' 
+                        -s './src' 
+                        -f 'ALL' 
+                        --prettyPrint
+                    ''', odcInstallation: 'Dependency-Check-CLI'
 
-                        // Publish the generated report
-                        dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                    // Publish the generated report
+                    dependencyCheckPublisher pattern: '**/dependency-check-reports/dependency-check-report.xml'
+                }
+            }
+        }
 
-                        // Check if the report file exists
-                        def reportPath = 'dependency-check-report.xml'
-                        if (!fileExists(reportPath)) {
-                            error "Dependency-Check report not found at ${reportPath}. Build halted."
-                        }
+        stage('Check Vulnerabilities') {
+            steps {
+                script {
+                    def reportPath = './dependency-check-reports/dependency-check-report.xml'
+                    if (!fileExists(reportPath)) {
+                        error("Dependency-Check report not found at ${reportPath}")
+                    }
 
-                        // Read the report file and search for findings
-                        def findings = readFile(reportPath)
-                        def criticalCount = findings.findAll(/<severity>CRITICAL<\/severity>/).size()
-                        def highCount = findings.findAll(/<severity>HIGH<\/severity>/).size()
+                    def reportContent = readFile(reportPath)
+                    def findings = []
 
-                        if (criticalCount > 0 || highCount > 0) {
-                            echo "Critical Findings: ${criticalCount}\nHigh Findings: ${highCount}"
-                            echo "Detailed Report:\n" + findings
-                            error "OWASP Dependency-Check found critical/high vulnerabilities. Build halted."
-                        } else {
-                            echo "No critical/high vulnerabilities found. Build passed successfully."
-                        }
-                    } catch (Exception e) {
-                        error "Dependency-Check stage failed: ${e.message}"
+                    // Extract vulnerabilities using simple regex for severity
+                    reportContent.eachMatch(/<severity>(Critical|High|Medium|Low)<\/severity>/) { match ->
+                        findings << match[0]
+                    }
+
+                    if (findings) {
+                        echo "Vulnerabilities found:\n${findings.join('\n')}"
+                        error("Pipeline failed due to findings in Dependency-Check.")
+                    } else {
+                        echo "No vulnerabilities found in Dependency-Check report."
                     }
                 }
             }
@@ -45,7 +48,7 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline completed successfully. No findings were generated.'
+            echo 'Pipeline completed successfully!'
         }
         failure {
             echo 'Pipeline failed due to findings in Dependency-Check.'
