@@ -8,7 +8,7 @@ pipeline {
                     // Run OWASP Dependency-Check with the necessary arguments
                     dependencyCheck additionalArguments: '''
                         -o './' 
-                        -s './' 
+                        -s './src' 
                         -f 'ALL' 
                         --prettyPrint
                     ''', odcInstallation: 'Dependency-Check-CLI' 
