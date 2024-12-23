@@ -19,13 +19,4 @@ pipeline {
             }
         }
     }
-
-    post {
-        success {
-            echo 'OWASP Dependency-Check completed successfully!'
-        }
-        failure {
-            echo 'OWASP Dependency-Check failed.'
-        }
-    }
 }
