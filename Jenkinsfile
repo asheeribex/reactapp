@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent any 
 
     stages {
         stage('Dependency-Check-CLI') {
@@ -20,6 +20,7 @@ pipeline {
                         // Read the report and check for findings
                         def findings = readFile('dependency-check-report.xml')
                         if (findings.contains('<severity>CRITICAL</severity>') || findings.contains('<severity>HIGH</severity>')) {
+                            echo "Dependency-Check Findings:\n" + findings
                             error "OWASP Dependency-Check found critical/high vulnerabilities. Build halted."
                         } else {
                             echo "No critical/high vulnerabilities found. Build passed successfully."
