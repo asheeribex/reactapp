@@ -23,14 +23,14 @@ pipeline {
                             error "Dependency-Check report not found at ${reportPath}. Build halted."
                         }
 
-                        // Parse and display findings
-                        def reportXml = new XmlSlurper().parse(reportPath)
-                        def criticalFindings = reportXml.depthFirst().findAll { it.severity?.text() == 'CRITICAL' }
-                        def highFindings = reportXml.depthFirst().findAll { it.severity?.text() == 'HIGH' }
+                        // Read the report file and search for findings
+                        def findings = readFile(reportPath)
+                        def criticalCount = findings.findAll(/<severity>CRITICAL<\/severity>/).size()
+                        def highCount = findings.findAll(/<severity>HIGH<\/severity>/).size()
 
-                        if (criticalFindings || highFindings) {
-                            echo "Critical Findings:\n" + criticalFindings.collect { it.description.text() }.join('\n')
-                            echo "High Findings:\n" + highFindings.collect { it.description.text() }.join('\n')
+                        if (criticalCount > 0 || highCount > 0) {
+                            echo "Critical Findings: ${criticalCount}\nHigh Findings: ${highCount}"
+                            echo "Detailed Report:\n" + findings
                             error "OWASP Dependency-Check found critical/high vulnerabilities. Build halted."
                         } else {
                             echo "No critical/high vulnerabilities found. Build passed successfully."
