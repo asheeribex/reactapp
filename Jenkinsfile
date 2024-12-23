@@ -13,7 +13,7 @@ pipeline {
                         --prettyPrint
                     ''', 
                     odcInstallation: 'Dependency-Check-CLI',
-                    stopBuild: true  // Stop the build if findings are detected
+                    failBuildOnCVSS: '7.0'
 
                     // Publish the generated report
                     dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
