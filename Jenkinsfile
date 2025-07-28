@@ -1,33 +1,38 @@
 pipeline {
-    agent any
+  agent any
 
-    stages {
-        stage('Dependency-Check-CLI') {
-            steps {
-                script {
-                    // Run OWASP Dependency-Check with the necessary arguments
-                    dependencyCheck additionalArguments: '''
-                        -o './' 
-                        -s './' 
-                        -f 'ALL' 
-                        --prettyPrint
-                    ''', 
-                    odcInstallation: 'Dependency-Check-CLI',
-                    failBuildOnCVSS: '7.0'
-
-                    // Publish the generated report
-                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-                }
-            }
-        }
+  stages {
+    stage('Checkout Code') {
+      steps {
+        checkout scm
+      }
     }
 
-    post {
-        success {
-            echo 'OWASP Dependency-Check completed successfully!'
-        }
-        failure {
-            echo 'OWASP Dependency-Check failed.'
-        }
+    stage('Install GitLeaks') {
+      steps {
+        sh '''
+          curl -sL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 -o gitleaks
+          chmod +x gitleaks
+          ./gitleaks version
+        '''
+      }
     }
+
+    stage('Run GitLeaks Scan') {
+      steps {
+        sh '''
+          ./gitleaks detect --source=. --verbose --redact --exit-code 1
+        '''
+      }
+    }
+  }
+
+  post {
+    failure {
+      echo '❌ GitLeaks scan failed — potential secrets found!'
+    }
+    success {
+      echo '✅ GitLeaks scan passed — no secrets detected.'
+    }
+  }
 }
