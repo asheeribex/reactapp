@@ -11,7 +11,9 @@ pipeline {
     stage('Install GitLeaks') {
       steps {
         sh '''
-          curl -sL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 -o gitleaks
+          GITLEAKS_VERSION="v8.18.2"
+          curl -sL https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz
           chmod +x gitleaks
           ./gitleaks version
         '''
@@ -29,7 +31,7 @@ pipeline {
 
   post {
     failure {
-      echo '❌ GitLeaks scan failed — potential secrets found!'
+      echo '❌ GitLeaks scan failed — potential secrets found or install issue!'
     }
     success {
       echo '✅ GitLeaks scan passed — no secrets detected.'
