@@ -8,19 +8,28 @@ pipeline {
       }
     }
 
-    stage('Run GitLeaks Scan') {
-      steps {
-        sh 'gitleaks detect --source=. --verbose --redact --exit-code 1'
-      }
-    }
-  }
+    stage('Run Gitleaks Scan') {
+            steps {
+                sh '''
+                    echo "Running Gitleaks scan..."
+                    gitleaks detect --source . --report-path gitleaks-report.json --exit-code 1
+                '''
+            }
+        }
 
-  post {
-    failure {
-      echo '❌ GitLeaks scan failed — secrets found!'
+        stage('Post Scan Report') {
+            steps {
+                archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
+            }
+        }
     }
-    success {
-      echo '✅ GitLeaks scan passed — no secrets detected.'
+
+    post {
+        failure {
+            echo "❌ Gitleaks detected secrets! Check gitleaks-report.json for details."
+        }
+        success {
+            echo "✅ No secrets found by Gitleaks."
+        }
     }
-  }
 }
